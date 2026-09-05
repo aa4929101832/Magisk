@@ -1,5 +1,5 @@
 use crate::compress::get_decoder;
-use crate::ffi::check_fmt;
+use crate::format::check_fmt;
 use crate::proto::update_metadata::DeltaArchiveManifest;
 use crate::proto::update_metadata::mod_InstallOperation::Type;
 use base::{LoggedError, LoggedResult, ReadSeekExt, ResultExt, WriteExt, error};
@@ -164,10 +164,11 @@ pub fn extract_boot_from_payload(
                 out_file.seek(SeekFrom::Start(out_offset))?;
                 let fmt = check_fmt(data);
 
-                let Ok(_): std::io::Result<()> = (try {
+                let Ok(_) = || -> std::io::Result<()> {
                     let mut decoder = get_decoder(fmt, Cursor::new(data))?;
                     std::io::copy(decoder.as_mut(), &mut out_file)?;
-                }) else {
+                    Ok(())
+                }() else {
                     return Err(bad_payload!("decompression failed"));
                 };
             }
